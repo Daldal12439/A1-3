@@ -59,7 +59,7 @@ def get_gemini_client():
 # 기본 주소
 # ========================================
 
-@app.get("/")
+@app.get("/api")
 def root():
     return {
         "message": "Palette AI API is running"
@@ -70,7 +70,7 @@ def root():
 # 팔레트 생성
 # ========================================
 
-@app.post("/generate")
+@app.post("/api/generate")
 def generate_palette(request: PaletteRequest):
 
     prompt = request.prompt.strip()

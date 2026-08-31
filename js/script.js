@@ -26,7 +26,7 @@ const resultDescription = document.getElementById("result-description");
    2. API 주소
 ======================================== */
 
-const API_URL = "/api";
+const API_URL = "/api/generate";
 
 
 /* ========================================
