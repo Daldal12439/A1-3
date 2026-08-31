@@ -82,7 +82,7 @@ def api_status():
 # 팔레트 생성
 # ========================================
 
-@app.post("/generate")
+@app.post("/api/generate")
 def generate_palette(
     request: PaletteRequest
 ):
