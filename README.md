@@ -15,7 +15,7 @@
 
 ### 배포 URL
 
-**https://palette-d3va5rbke-daldal12439.vercel.app/**
+**https://palette-ai-xi.vercel.app?_vercel_share=vMM9wtHG0dA48qJgWMVb7RA7ZFMAUCL2**
 
 ### 프로젝트 목적
 
