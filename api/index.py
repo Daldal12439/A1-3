@@ -68,7 +68,7 @@ def get_gemini_client():
 # API 상태 확인
 # ========================================
 
-@app.get("/")
+@app.get("/api")
 def api_status():
 
     return {
@@ -80,7 +80,7 @@ def api_status():
 # 디버그
 # ========================================
 
-@app.get("/debug")
+@app.get("/api/debug")
 def debug():
 
     return {
@@ -96,7 +96,7 @@ def debug():
 # 팔레트 생성
 # ========================================
 
-@app.post("/generate")
+@app.post("/api/generate")
 def generate_palette(
     request: PaletteRequest
 ):
@@ -334,6 +334,10 @@ def generate_palette(
 
         for index, color in enumerate(colors):
 
+            # ------------------------------------
+            # 색상 데이터 타입 검사
+            # ------------------------------------
+
             if not isinstance(
                 color,
                 dict
@@ -348,6 +352,10 @@ def generate_palette(
                 }
 
 
+            # ------------------------------------
+            # 필수 키 검사
+            # ------------------------------------
+
             for key in required_keys:
 
                 if key not in color:
@@ -361,9 +369,9 @@ def generate_palette(
                     }
 
 
-            # ========================================
+            # ------------------------------------
             # HEX 코드 검사
-            # ========================================
+            # ------------------------------------
 
             hex_code = color["hex"]
 
