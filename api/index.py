@@ -48,7 +48,7 @@ BASE_DIR = os.path.dirname(
 
 
 # ========================================
-# 정적 파일
+# 정적 파일 경로
 # ========================================
 
 css_path = os.path.join(
@@ -61,6 +61,10 @@ js_path = os.path.join(
     "js"
 )
 
+
+# ========================================
+# 정적 파일 연결
+# ========================================
 
 if os.path.isdir(css_path):
 
@@ -108,10 +112,6 @@ def get_gemini_client():
 
 # ========================================
 # 메인 페이지
-#
-# Vercel에서 /api/index.py가 실행될 경우
-# 이 함수 내부의 "/"는 해당 Serverless
-# Function 내부의 루트 경로를 의미합니다.
 # ========================================
 
 @app.get("/")
@@ -122,16 +122,21 @@ def home():
         "index.html"
     )
 
-    return FileResponse(
-        index_path
-    )
+    if not os.path.isfile(index_path):
+
+        return {
+            "success": False,
+            "message": "index.html 파일을 찾을 수 없습니다."
+        }
+
+    return FileResponse(index_path)
 
 
 # ========================================
 # API 상태 확인
 # ========================================
 
-@app.get("/status")
+@app.get("/api")
 def api_status():
 
     return {
@@ -142,13 +147,8 @@ def api_status():
 # ========================================
 # 팔레트 생성
 # ========================================
-#
-# 프론트엔드에서는 /api/generate를 호출하고
-# Vercel이 api/index.py로 연결한 뒤
-# FastAPI 내부에서는 /generate가 처리합니다.
-# ========================================
 
-@app.post("/generate")
+@app.post("/api/generate")
 def generate_palette(
     request: PaletteRequest
 ):
@@ -289,7 +289,8 @@ def generate_palette(
             return {
                 "success": False,
                 "message": (
-                    "AI 응답을 JSON으로 변환할 수 없습니다."
+                    "AI 응답을 JSON으로 "
+                    "변환할 수 없습니다."
                 ),
                 "error": result_text
             }
@@ -317,7 +318,8 @@ def generate_palette(
             return {
                 "success": False,
                 "message": (
-                    "AI 응답에 description 항목이 없습니다."
+                    "AI 응답에 description "
+                    "항목이 없습니다."
                 )
             }
 
@@ -327,7 +329,8 @@ def generate_palette(
             return {
                 "success": False,
                 "message": (
-                    "AI 응답에 colors 항목이 없습니다."
+                    "AI 응답에 colors "
+                    "항목이 없습니다."
                 )
             }
 
@@ -357,7 +360,7 @@ def generate_palette(
             return {
                 "success": False,
                 "message": (
-                    f"색상은 정확히 5개가 필요합니다. "
+                    "색상은 정확히 5개가 필요합니다. "
                     f"현재 {len(colors)}개입니다."
                 )
             }
@@ -380,11 +383,7 @@ def generate_palette(
         )
 
 
-        for index, color in enumerate(
-            colors
-        ):
-
-            # 색상 데이터 타입 확인
+        for index, color in enumerate(colors):
 
             if not isinstance(
                 color,
@@ -400,8 +399,6 @@ def generate_palette(
                 }
 
 
-            # 필수 키 확인
-
             for key in required_keys:
 
                 if key not in color:
@@ -415,9 +412,7 @@ def generate_palette(
                     }
 
 
-            # ------------------------------------
             # HEX 코드 확인
-            # ------------------------------------
 
             hex_code = color["hex"]
 
@@ -463,6 +458,7 @@ def generate_palette(
                 result_json,
                 ensure_ascii=False
             )
+
         }
 
 
@@ -481,4 +477,5 @@ def generate_palette(
             ),
 
             "error": str(e)
+
         }
