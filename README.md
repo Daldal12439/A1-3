@@ -113,15 +113,11 @@ AI 팔레트 추천
 
 배포된 웹페이지가 정상적으로 표시되는 것을 확인했습니다.
 
-![Palette AI 데스크톱 화면](docs/screenshots/desktop.png)
 
 ## 모바일 화면
 
 반응형 CSS가 적용된 모바일 화면을 확인할 수 있습니다.
 
-![Palette AI 모바일 화면](docs/screenshots/mobile.png)
-
-> 실제 제출 시 브라우저의 개발자 도구에서 모바일 기기를 선택한 후 화면을 캡처하여 `docs/screenshots/mobile.png`로 저장합니다.
 
 ---
 
