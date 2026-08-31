@@ -45,7 +45,6 @@ app.add_middleware(
 # ========================================
 
 class PaletteRequest(BaseModel):
-
     prompt: str
 
 
@@ -56,7 +55,6 @@ class PaletteRequest(BaseModel):
 def get_gemini_client():
 
     if not api_key:
-
         raise RuntimeError(
             "GEMINI_API_KEY가 환경 변수에 설정되어 있지 않습니다."
         )
@@ -72,13 +70,19 @@ def get_gemini_client():
 
 @app.get("/")
 def api_status():
+
     return {
         "message": "Palette AI API is running"
     }
 
 
+# ========================================
+# 디버그
+# ========================================
+
 @app.get("/debug")
 def debug():
+
     return {
         "message": "FastAPI is working",
         "routes": [
@@ -92,7 +96,7 @@ def debug():
 # 팔레트 생성
 # ========================================
 
-@app.post("/api/generate")
+@app.post("/generate")
 def generate_palette(
     request: PaletteRequest
 ):
@@ -198,6 +202,7 @@ def generate_palette(
             config={
                 "response_mime_type": "application/json"
             }
+
         )
 
 
@@ -355,6 +360,10 @@ def generate_palette(
                         )
                     }
 
+
+            # ========================================
+            # HEX 코드 검사
+            # ========================================
 
             hex_code = color["hex"]
 
