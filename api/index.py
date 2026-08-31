@@ -7,8 +7,18 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from google import genai
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from google import genai
+
+
+# ========================================
+# 환경 변수
+# ========================================
+
+load_dotenv()
+
+api_key = os.getenv("GEMINI_API_KEY")
 
 
 # ========================================
@@ -17,14 +27,9 @@ from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# ========================================
-# 환경 변수
-# ========================================
-
-load_dotenv(BASE_DIR / ".env")
-
-api_key = os.getenv("GEMINI_API_KEY")
+INDEX_FILE = BASE_DIR / "index.html"
+CSS_DIR = BASE_DIR / "css"
+JS_DIR = BASE_DIR / "js"
 
 
 # ========================================
@@ -47,6 +52,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ========================================
+# 정적 파일
+# ========================================
+
+if CSS_DIR.exists():
+    app.mount(
+        "/css",
+        StaticFiles(directory=str(CSS_DIR)),
+        name="css"
+    )
+
+if JS_DIR.exists():
+    app.mount(
+        "/js",
+        StaticFiles(directory=str(JS_DIR)),
+        name="js"
+    )
 
 
 # ========================================
@@ -80,10 +104,15 @@ def get_gemini_client():
 @app.get("/")
 def home():
 
-    index_file = BASE_DIR / "index.html"
+    if not INDEX_FILE.exists():
+        return {
+            "success": False,
+            "message": "index.html 파일을 찾을 수 없습니다."
+        }
 
     return FileResponse(
-        index_file
+        str(INDEX_FILE),
+        media_type="text/html"
     )
 
 
@@ -111,7 +140,12 @@ def debug():
         "routes": [
             str(route.path)
             for route in app.routes
-        ]
+        ],
+        "files": {
+            "index.html": INDEX_FILE.exists(),
+            "css": CSS_DIR.exists(),
+            "js": JS_DIR.exists()
+        }
     }
 
 
@@ -126,7 +160,6 @@ def generate_palette(
 
     prompt = request.prompt.strip()
 
-
     # ========================================
     # 입력값 검사
     # ========================================
@@ -138,7 +171,6 @@ def generate_palette(
             "message": "프롬프트를 입력해주세요."
         }
 
-
     # ========================================
     # Gemini 프롬프트
     # ========================================
@@ -147,7 +179,7 @@ def generate_palette(
 당신은 Palette AI의 전문 컬러 디자이너입니다.
 
 사용자의 요청을 분석하여 그림이나 디자인에 사용할 수 있는
-5가지 색상의 컬러 팔레트를 만들어주세요.
+5가지 색상의 조화로운 컬러 팔레트를 만들어주세요.
 
 반드시 아래 JSON 구조를 사용하세요.
 
@@ -196,7 +228,6 @@ def generate_palette(
 5. JSON 이외의 설명이나 Markdown을 작성하지 마세요.
 """
 
-
     full_prompt = f"""
 {system_prompt}
 
@@ -204,7 +235,6 @@ def generate_palette(
 
 {prompt}
 """
-
 
     # ========================================
     # Gemini API 요청
@@ -222,7 +252,6 @@ def generate_palette(
             }
         )
 
-
         # ========================================
         # 응답 확인
         # ========================================
@@ -231,14 +260,12 @@ def generate_palette(
             response.text or ""
         ).strip()
 
-
         if not result_text:
 
             return {
                 "success": False,
                 "message": "AI가 빈 응답을 반환했습니다."
             }
-
 
         # ========================================
         # JSON 변환
@@ -261,7 +288,6 @@ def generate_palette(
                 "error": result_text
             }
 
-
         # ========================================
         # 최상위 구조 검사
         # ========================================
@@ -273,11 +299,8 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": (
-                    "AI 응답 형식이 올바르지 않습니다."
-                )
+                "message": "AI 응답 형식이 올바르지 않습니다."
             }
-
 
         if "description" not in result_json:
 
@@ -289,7 +312,6 @@ def generate_palette(
                 )
             }
 
-
         if "colors" not in result_json:
 
             return {
@@ -300,13 +322,11 @@ def generate_palette(
                 )
             }
 
-
         # ========================================
         # colors 검사
         # ========================================
 
         colors = result_json["colors"]
-
 
         if not isinstance(
             colors,
@@ -315,11 +335,8 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": (
-                    "colors 항목이 배열이 아닙니다."
-                )
+                "message": "colors 항목이 배열이 아닙니다."
             }
-
 
         if len(colors) != 5:
 
@@ -330,7 +347,6 @@ def generate_palette(
                     f"현재 {len(colors)}개입니다."
                 )
             }
-
 
         # ========================================
         # 색상 데이터 검사
@@ -343,11 +359,9 @@ def generate_palette(
             "mood"
         ]
 
-
         hex_pattern = re.compile(
             r"^#[0-9A-Fa-f]{6}$"
         )
-
 
         for index, color in enumerate(colors):
 
@@ -364,7 +378,6 @@ def generate_palette(
                     )
                 }
 
-
             for key in required_keys:
 
                 if key not in color:
@@ -377,9 +390,7 @@ def generate_palette(
                         )
                     }
 
-
             hex_code = color["hex"]
-
 
             if not isinstance(
                 hex_code,
@@ -394,7 +405,6 @@ def generate_palette(
                     )
                 }
 
-
             if not hex_pattern.match(
                 hex_code
             ):
@@ -406,7 +416,6 @@ def generate_palette(
                         "HEX 코드 형식이 올바르지 않습니다."
                     )
                 }
-
 
         # ========================================
         # 성공
@@ -420,7 +429,6 @@ def generate_palette(
                 ensure_ascii=False
             )
         }
-
 
     # ========================================
     # 오류 처리
