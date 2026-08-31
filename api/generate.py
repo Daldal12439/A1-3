@@ -1,5 +1,6 @@
 ﻿import os
 import json
+import re
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -15,19 +16,6 @@ from google import genai
 load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
-
-
-if not api_key:
-    raise RuntimeError(
-        "GEMINI_API_KEY가 .env에 설정되어 있지 않습니다."
-    )
-
-
-# ========================================
-# Gemini
-# ========================================
-
-client = genai.Client(api_key=api_key)
 
 
 # ========================================
@@ -55,12 +43,24 @@ class PaletteRequest(BaseModel):
 
 
 # ========================================
+# Gemini 클라이언트
+# ========================================
+
+def get_gemini_client():
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY가 환경 변수에 설정되어 있지 않습니다."
+        )
+
+    return genai.Client(api_key=api_key)
+
+
+# ========================================
 # 기본 주소
 # ========================================
 
 @app.get("/")
 def root():
-
     return {
         "message": "Palette AI API is running"
     }
@@ -75,18 +75,15 @@ def generate_palette(request: PaletteRequest):
 
     prompt = request.prompt.strip()
 
-
     # ----------------------------------------
     # 입력값 검사
     # ----------------------------------------
 
     if not prompt:
-
         return {
             "success": False,
             "message": "프롬프트를 입력해주세요."
         }
-
 
     # ----------------------------------------
     # Gemini에게 전달할 지시사항
@@ -146,7 +143,6 @@ def generate_palette(request: PaletteRequest):
 6. JSON 이외의 설명이나 Markdown을 절대로 작성하지 마세요.
 """
 
-
     full_prompt = f"""
 {system_prompt}
 
@@ -155,40 +151,33 @@ def generate_palette(request: PaletteRequest):
 {prompt}
 """
 
-
     # ----------------------------------------
     # Gemini API 요청
     # ----------------------------------------
 
     try:
 
+        client = get_gemini_client()
+
         response = client.models.generate_content(
-
             model="gemini-3.6-flash",
-
             contents=full_prompt,
-
             config={
                 "response_mime_type": "application/json"
             }
-
         )
-
 
         # ----------------------------------------
         # 응답 확인
         # ----------------------------------------
 
-        result_text = response.text.strip()
-
+        result_text = (response.text or "").strip()
 
         if not result_text:
-
             return {
                 "success": False,
                 "message": "AI가 빈 응답을 반환했습니다."
             }
-
 
         # ----------------------------------------
         # JSON 변환
@@ -201,17 +190,10 @@ def generate_palette(request: PaletteRequest):
         except json.JSONDecodeError:
 
             return {
-
                 "success": False,
-
-                "message":
-                    "AI 응답을 JSON으로 변환할 수 없습니다.",
-
-                "error":
-                    result_text
-
+                "message": "AI 응답을 JSON으로 변환할 수 없습니다.",
+                "error": result_text
             }
-
 
         # ----------------------------------------
         # 최상위 구조 확인
@@ -220,26 +202,16 @@ def generate_palette(request: PaletteRequest):
         if "description" not in result_json:
 
             return {
-
                 "success": False,
-
-                "message":
-                    "AI 응답에 description 항목이 없습니다."
-
+                "message": "AI 응답에 description 항목이 없습니다."
             }
-
 
         if "colors" not in result_json:
 
             return {
-
                 "success": False,
-
-                "message":
-                    "AI 응답에 colors 항목이 없습니다."
-
+                "message": "AI 응답에 colors 항목이 없습니다."
             }
-
 
         # ----------------------------------------
         # colors 배열 확인
@@ -247,30 +219,22 @@ def generate_palette(request: PaletteRequest):
 
         colors = result_json["colors"]
 
-
         if not isinstance(colors, list):
 
             return {
-
                 "success": False,
-
-                "message":
-                    "colors 항목이 배열이 아닙니다."
-
+                "message": "colors 항목이 배열이 아닙니다."
             }
-
 
         if len(colors) != 5:
 
             return {
-
                 "success": False,
-
-                "message":
-                    f"색상은 정확히 5개가 필요합니다. 현재 {len(colors)}개입니다."
-
+                "message": (
+                    f"색상은 정확히 5개가 필요합니다. "
+                    f"현재 {len(colors)}개입니다."
+                )
             }
-
 
         # ----------------------------------------
         # 각각의 색상 데이터 검사
@@ -283,84 +247,70 @@ def generate_palette(request: PaletteRequest):
             "mood"
         ]
 
+        hex_pattern = re.compile(
+            r"^#[0-9A-Fa-f]{6}$"
+        )
 
         for index, color in enumerate(colors):
 
             if not isinstance(color, dict):
 
                 return {
-
                     "success": False,
-
-                    "message":
-                        f"{index + 1}번째 색상 데이터가 올바르지 않습니다."
-
+                    "message": (
+                        f"{index + 1}번째 색상 데이터가 "
+                        "올바르지 않습니다."
+                    )
                 }
-
 
             for key in required_keys:
 
                 if key not in color:
 
                     return {
-
                         "success": False,
-
-                        "message":
-                            f"{index + 1}번째 색상에 {key} 항목이 없습니다."
-
+                        "message": (
+                            f"{index + 1}번째 색상에 "
+                            f"{key} 항목이 없습니다."
+                        )
                     }
-
 
             # HEX 코드 확인
 
             hex_code = color["hex"]
 
-
             if not isinstance(hex_code, str):
 
                 return {
-
                     "success": False,
-
-                    "message":
-                        f"{index + 1}번째 색상의 HEX 코드가 올바르지 않습니다."
-
+                    "message": (
+                        f"{index + 1}번째 색상의 HEX 코드가 "
+                        "올바르지 않습니다."
+                    )
                 }
 
-
-            if not (
-                len(hex_code) == 7
-                and hex_code.startswith("#")
-            ):
+            if not hex_pattern.match(hex_code):
 
                 return {
-
                     "success": False,
-
-                    "message":
-                        f"{index + 1}번째 색상의 HEX 코드 형식이 올바르지 않습니다."
-
+                    "message": (
+                        f"{index + 1}번째 색상의 HEX 코드 형식이 "
+                        "올바르지 않습니다."
+                    )
                 }
-
 
         # ----------------------------------------
         # 성공
         # ----------------------------------------
 
         return {
-
             "success": True,
-
             "prompt": prompt,
-
             "result": json.dumps(
                 result_json,
                 ensure_ascii=False
             )
-
         }
-
 
     # ----------------------------------------
     # 기타 오류
@@ -369,13 +319,7 @@ def generate_palette(request: PaletteRequest):
     except Exception as e:
 
         return {
-
             "success": False,
-
-            "message":
-                "AI 요청 중 오류가 발생했습니다.",
-
-            "error":
-                str(e)
-
+            "message": "AI 요청 중 오류가 발생했습니다.",
+            "error": str(e)
         }
