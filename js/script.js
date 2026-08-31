@@ -26,7 +26,7 @@ const resultDescription = document.getElementById("result-description");
    2. API 주소
 ======================================== */
 
-const API_URL = "http://127.0.0.1:8000/generate";
+const API_URL = "/api";
 
 
 /* ========================================
