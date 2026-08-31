@@ -117,7 +117,7 @@ def generate_palette(
 
 
     # ========================================
-    # Gemini 시스템 프롬프트
+    # Gemini 프롬프트
     # ========================================
 
     system_prompt = """
@@ -126,7 +126,7 @@ def generate_palette(
 사용자의 요청을 분석하여 그림이나 디자인에 사용할 수 있는
 5가지 색상의 컬러 팔레트를 만들어주세요.
 
-반드시 아래 JSON 구조를 그대로 사용해야 합니다.
+반드시 아래 JSON 구조를 사용하세요.
 
 {
   "description": "추천 팔레트에 대한 짧은 설명",
@@ -164,14 +164,13 @@ def generate_palette(
   ]
 }
 
-반드시 지켜야 하는 규칙:
+규칙:
 
-1. colors 배열에는 정확히 5개의 색상이 있어야 합니다.
-2. 모든 색상은 유효한 HEX 코드여야 합니다.
+1. colors는 정확히 5개여야 합니다.
+2. 모든 hex는 유효한 HEX 코드여야 합니다.
 3. HEX 코드는 반드시 #으로 시작하는 6자리 코드여야 합니다.
-4. colors라는 이름을 절대로 변경하지 마세요.
-5. name, hex, role, mood 항목을 반드시 모두 포함하세요.
-6. JSON 이외의 설명이나 Markdown을 절대로 작성하지 마세요.
+4. 각 색상에는 name, hex, role, mood가 반드시 있어야 합니다.
+5. JSON 이외의 설명이나 Markdown을 작성하지 마세요.
 """
 
 
@@ -192,17 +191,12 @@ def generate_palette(
 
         client = get_gemini_client()
 
-
         response = client.models.generate_content(
-
             model="gemini-3.6-flash",
-
             contents=full_prompt,
-
             config={
                 "response_mime_type": "application/json"
             }
-
         )
 
 
@@ -256,9 +250,7 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": (
-                    "AI 응답 형식이 올바르지 않습니다."
-                )
+                "message": "AI 응답 형식이 올바르지 않습니다."
             }
 
 
@@ -298,9 +290,7 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": (
-                    "colors 항목이 배열이 아닙니다."
-                )
+                "message": "colors 항목이 배열이 아닙니다."
             }
 
 
@@ -334,10 +324,6 @@ def generate_palette(
 
         for index, color in enumerate(colors):
 
-            # ------------------------------------
-            # 색상 데이터 타입 검사
-            # ------------------------------------
-
             if not isinstance(
                 color,
                 dict
@@ -352,10 +338,6 @@ def generate_palette(
                 }
 
 
-            # ------------------------------------
-            # 필수 키 검사
-            # ------------------------------------
-
             for key in required_keys:
 
                 if key not in color:
@@ -368,10 +350,6 @@ def generate_palette(
                         )
                     }
 
-
-            # ------------------------------------
-            # HEX 코드 검사
-            # ------------------------------------
 
             hex_code = color["hex"]
 
@@ -408,16 +386,12 @@ def generate_palette(
         # ========================================
 
         return {
-
             "success": True,
-
             "prompt": prompt,
-
             "result": json.dumps(
                 result_json,
                 ensure_ascii=False
             )
-
         }
 
 
@@ -428,13 +402,7 @@ def generate_palette(
     except Exception as e:
 
         return {
-
             "success": False,
-
-            "message": (
-                "AI 요청 중 오류가 발생했습니다."
-            ),
-
+            "message": "AI 요청 중 오류가 발생했습니다.",
             "error": str(e)
-
         }
