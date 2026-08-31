@@ -1,19 +1,28 @@
 ﻿import os
 import json
 import re
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
 from google import genai
+from pydantic import BaseModel
+
+
+# ========================================
+# 프로젝트 경로
+# ========================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # ========================================
 # 환경 변수
 # ========================================
 
-load_dotenv()
+load_dotenv(BASE_DIR / ".env")
 
 api_key = os.getenv("GEMINI_API_KEY")
 
@@ -61,6 +70,20 @@ def get_gemini_client():
 
     return genai.Client(
         api_key=api_key
+    )
+
+
+# ========================================
+# 홈페이지
+# ========================================
+
+@app.get("/")
+def home():
+
+    index_file = BASE_DIR / "index.html"
+
+    return FileResponse(
+        index_file
     )
 
 
@@ -250,7 +273,9 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": "AI 응답 형식이 올바르지 않습니다."
+                "message": (
+                    "AI 응답 형식이 올바르지 않습니다."
+                )
             }
 
 
@@ -290,7 +315,9 @@ def generate_palette(
 
             return {
                 "success": False,
-                "message": "colors 항목이 배열이 아닙니다."
+                "message": (
+                    "colors 항목이 배열이 아닙니다."
+                )
             }
 
 
