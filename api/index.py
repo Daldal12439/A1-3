@@ -72,9 +72,19 @@ def get_gemini_client():
 
 @app.get("/")
 def api_status():
-
     return {
         "message": "Palette AI API is running"
+    }
+
+
+@app.get("/debug")
+def debug():
+    return {
+        "message": "FastAPI is working",
+        "routes": [
+            str(route.path)
+            for route in app.routes
+        ]
     }
 
 
